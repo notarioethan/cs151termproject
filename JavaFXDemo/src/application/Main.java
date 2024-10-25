@@ -13,6 +13,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import java.time.LocalDate;
+import java.util.*;
 
 public class Main extends Application {
 
@@ -141,7 +142,11 @@ public class Main extends Application {
                 openingDatePicker.setValue(LocalDate.now());
                 openingBalanceField.clear();
             }
-            //else if () //if openingBalance is not a number
+            //else if (accountName is a duplicate)
+            else if (Account.allAccNames.contains(accountName)) {
+            	showAlert("Error", "Account name already in use.");
+            }
+            //else if (openingBalance is not a number)
             else if (!openingBalance.matches("-?\\d+(\\.\\d+)?")) {
             	showAlert("Error", "Please enter a number as your balance.");
             }
