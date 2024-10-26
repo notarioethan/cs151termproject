@@ -14,6 +14,8 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import java.time.LocalDate;
 import java.util.*;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 
 public class Main extends Application {
 
@@ -143,9 +145,9 @@ public class Main extends Application {
                 openingBalanceField.clear();
             }
             //else if (accountName is a duplicate)
-            else if (Account.allAccNames.contains(accountName)) {
+            /*else if (Account.allAccNames.contains(accountName)) {
             	showAlert("Error", "Account name already in use.");
-            }
+            }*/
             //else if (openingBalance is not a number)
             else if (!openingBalance.matches("-?\\d+(\\.\\d+)?")) {
             	showAlert("Error", "Please enter a number as your balance.");
@@ -194,6 +196,54 @@ public class Main extends Application {
 
     // Main method to launch the application
     public static void main(String[] args) {
-        launch(args);
+    	
+    	String url = "jdbc:sqlite:budgetease.db";
+    	//sqlite connection
+    	
+    	//table
+    	var tbl = "CREATE TABLE IF NOT EXISTS accounts (" +
+    			  "	accountName text PRIMARY KEY," +
+    			  "	openingDate date NOT NULL," +
+    			  "	balance double NOT NULL" +
+    			  ");";
+        
+    	try (var conn = DriverManager.getConnection(url)) {
+            if (conn != null) {
+                var meta = conn.getMetaData();
+                System.out.println(meta.getDriverName());//makes sure JDBC driver works
+                //System.out.println("The driver name is " + meta.getDriverName());
+                //System.out.println("A new database has been created.");
+                
+                //create or access table from db
+                var stmt = conn.createStatement();
+                stmt.execute(tbl);
+            }
+        } catch (SQLException e) {
+            System.err.println(e.getMessage());
+        }
+    	
+    	launch(args);
+    	//output table
+    	String sorter = "SELECT accountName,openingDate,balance FROM accounts ORDER BY openingDate DESC;";
+    	try (var conn = DriverManager.getConnection(url)) {
+            if (conn != null) {
+                //var meta = conn.getMetaData();
+                
+                
+                
+                var pstmt = conn.prepareStatement(sorter);
+                var results = pstmt.executeQuery();
+                while (results.next()) {
+                	String an = results.getString(1);
+                	java.sql.Date od = results.getDate(2);
+                	double b = results.getDouble(3);
+                	System.out.println(an + " | " + od + " | " + b);
+                }
+                
+            }
+        } catch (SQLException e) {
+            System.err.println(e.getMessage());
+        }
+    	
     }
 }
