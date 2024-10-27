@@ -156,11 +156,11 @@ public class Main extends Application {
             	//convert opening balance to double
                 //throws error when letters entered - fix later so that only numbers can be entered
             	double opBal = Double.parseDouble(openingBalance);
-                System.out.print(opBal + " ");
-                Account newAcc = new Account(accountName, openingDate, opBal);
+                //System.out.print(opBal + " ");
+                if (Account.create(accountName, openingDate, opBal)) showAlert("Account Created", "Account has been successfully created.");
 
                 // Here you would typically save this data to your persistence layer
-                System.out.println("Account Created: " + accountName + ", " + openingDate + ", $" + openingBalance);
+                //System.out.println("Account Created: " + accountName + ", " + openingDate + ", $" + openingBalance);
 
                 // Clear fields after submission
                 accountNameField.clear();
@@ -168,7 +168,7 @@ public class Main extends Application {
                 openingBalanceField.clear();
 
                 // Optionally, show a confirmation message
-                showAlert("Account Created", "Account has been successfully created.");
+                
             }
         });
 
@@ -200,13 +200,14 @@ public class Main extends Application {
     	String url = "jdbc:sqlite:budgetease.db";
     	//sqlite connection
     	
-    	//table
-    	var tbl = "CREATE TABLE IF NOT EXISTS accounts (" +
+    	//creates table; not necessary anymore for now
+    	/*
+    	var tbl = "CREATE TABLE IF NOT EXISTS dupeTester (" +
     			  "	accountName text PRIMARY KEY," +
     			  "	openingDate date NOT NULL," +
     			  "	balance double NOT NULL" +
     			  ");";
-        
+        */
     	try (var conn = DriverManager.getConnection(url)) {
             if (conn != null) {
                 //var meta = conn.getMetaData();
@@ -216,7 +217,7 @@ public class Main extends Application {
                 
                 //create or access table from db
                 var stmt = conn.createStatement();
-                stmt.execute(tbl);
+                //stmt.execute(tbl);
             }
         } catch (SQLException e) {
             System.err.println(e.getMessage());

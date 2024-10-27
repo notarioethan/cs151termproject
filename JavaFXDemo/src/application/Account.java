@@ -14,14 +14,21 @@ public class Account {
 	//public static Set<String> allAccNames = new HashSet<String>();
 	
 	//SQLite database stuff
-	private String url = "jdbc:sqlite:budgetease.db";
+	private static String url = "jdbc:sqlite:budgetease.db";
 	
 	
-	public Account(String name, LocalDate date, double bal) {
+	public Account(String name, Date date, double bal) {
 		accountName = name;
-		openingDate = Date.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant());;
+		openingDate = date;
 		balance = bal;
-		//allAccNames.add(name);
+		
+		
+		
+	}
+	public static boolean create(String name, LocalDate date, double bal) {
+		String accN = name;
+		Date openD = Date.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant());;
+		double balan = bal;
 		
 		String inserter = "INSERT INTO accounts(accountName,openingDate,balance) VALUES(?,?,?)";
 		//String sorter = "SELECT openingDate FROM accounts ORDER BY openingDate DESC;";
@@ -29,21 +36,19 @@ public class Account {
 		try (var conn = DriverManager.getConnection(url)) {
             if (conn != null) {
                 //var meta = conn.getMetaData();
-                System.out.println("Inserting values");//makes sure connects to db
+                //System.out.println("Inserting values");//makes sure connects to db
                 var pstmt = conn.prepareStatement(inserter);
-                pstmt.setString(1, accountName);
-                pstmt.setDate(2, new java.sql.Date(openingDate.getTime()));
-                pstmt.setDouble(3, balance);
+                pstmt.setString(1, accN);
+                pstmt.setDate(2, new java.sql.Date(openD.getTime()));
+                pstmt.setDouble(3, balan);
                 pstmt.executeUpdate();
-                /*
-                pstmt = conn.prepareStatement(sorter);
-                pstmt.executeUpdate();
-                */
-                
+                Account newAcc = new Account(accN, openD, balan);
+                return true;
             }
         } catch (SQLException e) {
             System.err.println(e.getMessage());
         }
+		return false;
 	}
 	
 }
