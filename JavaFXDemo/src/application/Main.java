@@ -167,7 +167,7 @@ public class Main extends Application {
                 openingDatePicker.setValue(LocalDate.now());
                 openingBalanceField.clear();
 
-                // Optionally, show a confirmation message - moved up
+                
                 
             }
         });
