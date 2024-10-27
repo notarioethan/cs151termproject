@@ -209,8 +209,8 @@ public class Main extends Application {
         
     	try (var conn = DriverManager.getConnection(url)) {
             if (conn != null) {
-                var meta = conn.getMetaData();
-                System.out.println(meta.getDriverName());//makes sure JDBC driver works
+                //var meta = conn.getMetaData();
+                //System.out.println(meta.getDriverName());//makes sure JDBC driver works
                 //System.out.println("The driver name is " + meta.getDriverName());
                 //System.out.println("A new database has been created.");
                 
@@ -223,7 +223,7 @@ public class Main extends Application {
         }
     	
     	launch(args);
-    	//output table
+    	//output table after closing application
     	String sorter = "SELECT accountName,openingDate,balance FROM accounts ORDER BY openingDate DESC;";
     	try (var conn = DriverManager.getConnection(url)) {
             if (conn != null) {
@@ -237,7 +237,11 @@ public class Main extends Application {
                 	String an = results.getString(1);
                 	java.sql.Date od = results.getDate(2);
                 	double b = results.getDouble(3);
-                	System.out.println(an + " | " + od + " | " + b);
+                	//System.out.println(an + " | " + od + " | " + b);
+                	System.out.printf("%-32s | ", an);
+                	System.out.print(od + "| ");
+                	System.out.printf("$%.2f", b);
+                	System.out.println();
                 }
                 
             }
