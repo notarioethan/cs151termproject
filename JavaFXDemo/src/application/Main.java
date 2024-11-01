@@ -21,6 +21,7 @@ public class Main extends Application {
 
     private Stage primaryStage;
     private Scene homeScene;
+    static String url = "jdbc:sqlite:budgetease.db";
 
     @Override
     public void start(Stage primaryStage) {
@@ -62,10 +63,10 @@ public class Main extends Application {
         logoView.setPreserveRatio(true);
 
         // Buttons on the right
-        Button aboutButton = new Button("About");
-        Button viewDataButton = new Button("View Data");
-        Button newAccountButton = new Button("New Account");
-        Button myAccountsButton = new Button("My Accounts");
+        Button aboutButton = new Button("About");//not currently functional
+        Button viewDataButton = new Button("View Data");//not currently functional
+        Button newAccountButton = new Button("New Account");//account creation
+        Button myAccountsButton = new Button("My Accounts");//all of user's accounts
 
         // Set button styles
         String buttonStyle = "-fx-background-color: #87CEFA; -fx-text-fill: black;";
@@ -76,10 +77,10 @@ public class Main extends Application {
 
         // Set action for New Account button
         newAccountButton.setOnAction(e -> showCreateAccountScene());
-        //myAccountsButton.setOnAction(e -> );
+        myAccountsButton.setOnAction(e -> showMyAccountsScene());
 
         HBox.setMargin(logoView, new Insets(0, 0, 0, 10)); // Add left margin to logo
-        topBar.getChildren().addAll(logoView, aboutButton, viewDataButton, newAccountButton);
+        topBar.getChildren().addAll(logoView, aboutButton, viewDataButton, myAccountsButton, newAccountButton);
 
         return topBar;
     }
@@ -110,6 +111,57 @@ public class Main extends Application {
         return centerContent;
     }
 
+    private void showMyAccountsScene() {
+    	BorderPane layout = new BorderPane();
+    	layout.setStyle("-fx-background-color: #E6FFE6;"); // Light green background
+
+        // Add the top bar
+        layout.setTop(createTopBar());
+        
+        GridPane grid = new GridPane();
+        grid.setAlignment(Pos.CENTER);
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(25, 25, 25, 25));
+        
+        String tableQuery = "SELECT accountName,openingDate,balance FROM accounts ORDER BY openingDate DESC;";
+    	try (var conn = DriverManager.getConnection(url)) {
+            if (conn != null) {
+                //var meta = conn.getMetaData();
+                
+                
+                
+                var pstmt = conn.prepareStatement(tableQuery);
+                var results = pstmt.executeQuery();
+                int i = 0;
+                while (results.next()) {
+                	String an = results.getString(1);
+                	java.sql.Date od = results.getDate(2);
+                	double b = results.getDouble(3);
+                	/*
+                	System.out.printf("%-32s | ", an);
+                	System.out.print(od + "| ");
+                	System.out.printf("$%.2f", b);
+                	System.out.println();
+                	*/
+                	String accountRow = "%-32s | %tF | $%.2f";
+                	accountRow = String.format(accountRow, an, od, b);
+                	//System.out.println(accountRow);
+                	Label accInfo = new Label(accountRow);
+                	grid.add(accInfo, 0, i++);
+                }
+                
+            }
+        } catch (SQLException e) {
+            System.err.println(e.getMessage());
+        }
+        
+        layout.setCenter(grid);
+
+        Scene myAccountsScene = new Scene(layout, 800, 600);
+        primaryStage.setScene(myAccountsScene);
+    }
+    
     private void showCreateAccountScene() {
         BorderPane layout = new BorderPane();
         layout.setStyle("-fx-background-color: #E6FFE6;"); // Light green background
@@ -200,7 +252,7 @@ public class Main extends Application {
     // Main method to launch the application
     public static void main(String[] args) {
     	
-    	String url = "jdbc:sqlite:budgetease.db";
+    	
     	//sqlite connection
     	
     	//creates table; not necessary anymore for now
@@ -228,30 +280,7 @@ public class Main extends Application {
     	
     	launch(args);
     	//output table after closing application
-    	String sorter = "SELECT accountName,openingDate,balance FROM accounts ORDER BY openingDate DESC;";
-    	try (var conn = DriverManager.getConnection(url)) {
-            if (conn != null) {
-                //var meta = conn.getMetaData();
-                
-                
-                
-                var pstmt = conn.prepareStatement(sorter);
-                var results = pstmt.executeQuery();
-                while (results.next()) {
-                	String an = results.getString(1);
-                	java.sql.Date od = results.getDate(2);
-                	double b = results.getDouble(3);
-                	//System.out.println(an + " | " + od + " | " + b);
-                	System.out.printf("%-32s | ", an);
-                	System.out.print(od + "| ");
-                	System.out.printf("$%.2f", b);
-                	System.out.println();
-                }
-                
-            }
-        } catch (SQLException e) {
-            System.err.println(e.getMessage());
-        }
+    	
     	
     }
 }
