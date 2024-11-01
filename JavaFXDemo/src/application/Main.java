@@ -143,12 +143,17 @@ public class Main extends Application {
                 	System.out.print(od + "| ");
                 	System.out.printf("$%.2f", b);
                 	System.out.println();
-                	*/
+                	
                 	String accountRow = "%-32s | %tF | $%.2f";
                 	accountRow = String.format(accountRow, an, od, b);
+                	*/
                 	//System.out.println(accountRow);
-                	Label accInfo = new Label(accountRow);
-                	grid.add(accInfo, 0, i++);
+                	Label accNameLabel = new Label(an);
+                	Label openDateLabel = new Label("" + od);
+                	Label balanceLabel = new Label(String.format("$%.2f", b));
+                	grid.add(accNameLabel, 0, i);
+                	grid.add(openDateLabel, 1, i);
+                	grid.add(balanceLabel, 2, i++);
                 }
                 
             }
