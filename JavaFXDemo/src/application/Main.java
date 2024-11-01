@@ -65,15 +65,18 @@ public class Main extends Application {
         Button aboutButton = new Button("About");
         Button viewDataButton = new Button("View Data");
         Button newAccountButton = new Button("New Account");
+        Button myAccountsButton = new Button("My Accounts");
 
         // Set button styles
         String buttonStyle = "-fx-background-color: #87CEFA; -fx-text-fill: black;";
         aboutButton.setStyle(buttonStyle);
         viewDataButton.setStyle(buttonStyle);
         newAccountButton.setStyle("-fx-background-color: #90EE90; -fx-text-fill: black;");
+        myAccountsButton.setStyle("-fx-background-color: #90EE90; -fx-text-fill: black;");
 
         // Set action for New Account button
         newAccountButton.setOnAction(e -> showCreateAccountScene());
+        //myAccountsButton.setOnAction(e -> );
 
         HBox.setMargin(logoView, new Insets(0, 0, 0, 10)); // Add left margin to logo
         topBar.getChildren().addAll(logoView, aboutButton, viewDataButton, newAccountButton);
@@ -158,7 +161,7 @@ public class Main extends Application {
             	double opBal = Double.parseDouble(openingBalance);
                 //System.out.print(opBal + " ");
                 if (Account.create(accountName, openingDate, opBal)) showAlert("Account Created", "Account has been successfully created.");
-
+                else showAlert("Error", "Account name already in use.");
                 // Here you would typically save this data to your persistence layer
                 //System.out.println("Account Created: " + accountName + ", " + openingDate + ", $" + openingBalance);
 
@@ -201,13 +204,13 @@ public class Main extends Application {
     	//sqlite connection
     	
     	//creates table; not necessary anymore for now
-    	/*
+    	
     	var tbl = "CREATE TABLE IF NOT EXISTS dupeTester (" +
     			  "	accountName text PRIMARY KEY," +
     			  "	openingDate date NOT NULL," +
     			  "	balance double NOT NULL" +
     			  ");";
-        */
+        
     	try (var conn = DriverManager.getConnection(url)) {
             if (conn != null) {
                 //var meta = conn.getMetaData();
@@ -217,7 +220,7 @@ public class Main extends Application {
                 
                 //create or access table from db
                 var stmt = conn.createStatement();
-                //stmt.execute(tbl);
+                stmt.execute(tbl);
             }
         } catch (SQLException e) {
             System.err.println(e.getMessage());
