@@ -64,23 +64,24 @@ public class Main extends Application {
 
         // Buttons on the right
         Button aboutButton = new Button("About");//not currently functional
-        Button viewDataButton = new Button("View Data");//not currently functional
+        Button transactionsButton = new Button("Transactions");//user's transactions
         Button newAccountButton = new Button("New Account");//account creation
         Button myAccountsButton = new Button("My Accounts");//all of user's accounts
 
         // Set button styles
         String buttonStyle = "-fx-background-color: #87CEFA; -fx-text-fill: black;";
         aboutButton.setStyle(buttonStyle);
-        viewDataButton.setStyle(buttonStyle);
+        transactionsButton.setStyle("-fx-background-color: #90EE90; -fx-text-fill: black;");
         newAccountButton.setStyle("-fx-background-color: #90EE90; -fx-text-fill: black;");
         myAccountsButton.setStyle("-fx-background-color: #90EE90; -fx-text-fill: black;");
 
-        // Set action for New Account button
+        // Set action for buttons
         newAccountButton.setOnAction(e -> showCreateAccountScene());
         myAccountsButton.setOnAction(e -> showMyAccountsScene());
+        transactionsButton.setOnAction(e -> showTransactionsScene());
 
         HBox.setMargin(logoView, new Insets(0, 0, 0, 10)); // Add left margin to logo
-        topBar.getChildren().addAll(logoView, aboutButton, viewDataButton, myAccountsButton, newAccountButton);
+        topBar.getChildren().addAll(logoView, aboutButton, transactionsButton, myAccountsButton, newAccountButton);
 
         return topBar;
     }
@@ -110,6 +111,139 @@ public class Main extends Application {
 
         return centerContent;
     }
+    
+    private void showTransactionsScene() {
+    	BorderPane layout = new BorderPane();
+    	layout.setStyle("-fx-background-color: #E6FFE6;"); // Light green background
+
+        // Add the top bar
+        layout.setTop(createTopBar());
+        
+        GridPane grid = new GridPane();
+        grid.setAlignment(Pos.CENTER);
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(25, 25, 25, 25));
+        
+        Button addTransactionType = new Button("Add New Transaction Type");
+        Button enterTransactions = new Button("Enter Transactions");
+        
+        addTransactionType.setOnAction(e -> showAddTransactionsScene());
+        enterTransactions.setOnAction(e -> showEnterTransactionsScene());
+        
+        grid.add(addTransactionType, 0, 0);
+        grid.add(enterTransactions, 1, 0);
+        
+        layout.setCenter(grid);
+
+        Scene transactionsScene = new Scene(layout, 800, 600);
+        primaryStage.setScene(transactionsScene);
+    }
+    private void showAddTransactionsScene() {
+    	BorderPane layout = new BorderPane();
+    	layout.setStyle("-fx-background-color: #E6FFE6;"); // Light green background
+
+        // Add the top bar
+        layout.setTop(createTopBar());
+        
+        GridPane grid = new GridPane();
+        grid.setAlignment(Pos.CENTER);
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(25, 25, 25, 25));
+        
+        String transactionTable = "CREATE TABLE IF NOT EXISTS transactionTypeTable(tname text PRIMARY KEY);";
+        
+        try (var conn = DriverManager.getConnection(url)) {
+            if (conn != null) {
+                
+                var stmt = conn.createStatement();
+                stmt.execute(transactionTable);
+            }
+        } catch (SQLException erm) {
+            System.err.println(erm.getMessage());
+        }
+        
+        Label newTransactionTypeLabel = new Label("Add a new transaction type:");
+        TextField newTransactionTypeField = new TextField();
+        Button addButton = new Button("Add");
+        String inserter = "INSERT INTO transactionTypeTable(tname) VALUES(?)";
+        addButton.setOnAction(e -> {
+        	String newTypeName = newTransactionTypeField.getText();
+        	if (newTypeName.equals("")) {
+        		showAlert("Error", "Please fill all required fields.");
+        	}
+        	else {
+        		try (var conn = DriverManager.getConnection(url)) {
+            		if (conn != null) {
+            			var pstmt = conn.prepareStatement(inserter);
+            			pstmt.setString(1, newTypeName);
+            			pstmt.executeUpdate();
+            			showAlert("Success!", "New transaction type created.");
+            		}
+            	}
+            	catch(SQLException erm) {
+            		//System.err.println(erm.getMessage());
+            		showAlert("Error", "Transaction type already exists.");
+            	}
+        	}
+        	newTransactionTypeField.clear();
+        });
+        
+        grid.add(newTransactionTypeLabel, 0, 0);
+        grid.add(newTransactionTypeField, 1, 0);
+        grid.add(addButton, 1, 1);
+        
+        layout.setCenter(grid);
+
+        Scene addTransactionsScene = new Scene(layout, 800, 600);
+        primaryStage.setScene(addTransactionsScene);
+    }
+    private void showEnterTransactionsScene() {
+    	BorderPane layout = new BorderPane();
+    	layout.setStyle("-fx-background-color: #E6FFE6;"); // Light green background
+
+        // Add the top bar
+        layout.setTop(createTopBar());
+        
+        GridPane grid = new GridPane();
+        grid.setAlignment(Pos.CENTER);
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(25, 25, 25, 25));
+        
+        Label accNameLabel = new Label("Account Name:");
+        
+        Label transactionTypeLabel = new Label("Transaction Type:");
+        
+        Label transactionDateLabel = new Label("Date:");
+        
+        Label descriptionLabel = new Label("Description");
+        
+        Label amountLabel = new Label("Amount:");
+        
+        String tableCreator = "CREATE TABLE IF NOT EXISTS transactionsTable(" + 
+        					  "id INTEGER PRIMARY KEY," +
+        					  "accName text NOT NULL" +
+        					  "transactionType text NOT NULL" +
+        					  "transactionDate date NOT NULL" +
+        					  "description text NOT NULL" +
+        					  "money double NOT NULL" +
+        					  ")";
+        
+        try (var conn = DriverManager.getConnection(url)) {
+            if (conn != null) {
+                //
+            }
+        } catch (SQLException e) {
+            System.err.println(e.getMessage());
+        }
+        
+        layout.setCenter(grid);
+
+        Scene enterTransactionsScene = new Scene(layout, 800, 600);
+        primaryStage.setScene(enterTransactionsScene);
+    }
 
     private void showMyAccountsScene() {
     	BorderPane layout = new BorderPane();
@@ -124,6 +258,9 @@ public class Main extends Application {
         grid.setVgap(10);
         grid.setPadding(new Insets(25, 25, 25, 25));
         
+        Label myAccountsHead = new Label("ACCOUNTS");
+        grid.add(myAccountsHead, 2, 0);
+        
         String tableQuery = "SELECT accountName,openingDate,balance FROM accounts ORDER BY openingDate DESC;";
     	try (var conn = DriverManager.getConnection(url)) {
             if (conn != null) {
@@ -133,7 +270,7 @@ public class Main extends Application {
                 
                 var pstmt = conn.prepareStatement(tableQuery);
                 var results = pstmt.executeQuery();
-                int i = 0;
+                int i = 1;
                 while (results.next()) {
                 	String an = results.getString(1);
                 	java.sql.Date od = results.getDate(2);
@@ -152,8 +289,8 @@ public class Main extends Application {
                 	Label openDateLabel = new Label("" + od);
                 	Label balanceLabel = new Label(String.format("$%.2f", b));
                 	grid.add(accNameLabel, 0, i);
-                	grid.add(openDateLabel, 1, i);
-                	grid.add(balanceLabel, 2, i++);
+                	grid.add(openDateLabel, 2, i);
+                	grid.add(balanceLabel, 4, i++);
                 }
                 
             }
@@ -199,7 +336,7 @@ public class Main extends Application {
             //
             
             if (accountName.equals("") || openingBalance.equals("")) {
-            	showAlert("Error", "Please fill in all required fields.");
+            	showAlert("Error", "Please fill all required fields.");
             	accountNameField.clear();
                 openingDatePicker.setValue(LocalDate.now());
                 openingBalanceField.clear();
@@ -284,7 +421,7 @@ public class Main extends Application {
         }
     	
     	launch(args);
-    	//output table after closing application
+    	
     	
     	
     }
