@@ -11,7 +11,7 @@ public class Account {
 	private Date openingDate;
 	private double balance;
 	
-	//public static Set<String> allAccNames = new HashSet<String>();
+	public static Map<String, Account> allAccNames = new HashMap<String, Account>();
 	
 	//SQLite database stuff
 	private static String url = "jdbc:sqlite:budgetease.db";
@@ -27,7 +27,7 @@ public class Account {
 	}
 	public static boolean create(String name, LocalDate date, double bal) {
 		String accN = name;
-		Date openD = Date.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant());;
+		Date openD = Date.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant());
 		double balan = bal;
 		
 		String inserter = "INSERT INTO accounts(accountName,openingDate,balance) VALUES(?,?,?)";
@@ -43,11 +43,30 @@ public class Account {
                 pstmt.setDouble(3, balan);
                 pstmt.executeUpdate();
                 Account newAcc = new Account(accN, openD, balan);
+                allAccNames.put(accN, newAcc);
                 return true;
             }
         } catch (SQLException e) {
             System.err.println(e.getMessage());
         }
+		return false;
+	}
+	
+	public boolean editBalance(double amt) {
+		balance += amt;
+		String updater = "UPDATE accounts SET balance = ? WHERE accountName = ?";// + accountName;
+		try (var conn = DriverManager.getConnection(url);
+	            var pstmt = conn.prepareStatement(updater)) {
+	            // set the parameters
+	            pstmt.setString(2, accountName);
+	            pstmt.setDouble(1, balance);
+	            
+	            // update
+	            pstmt.executeUpdate();
+	            return true;
+	        } catch (SQLException e) {
+	            System.err.println(e.getMessage());
+	        }
 		return false;
 	}
 	

@@ -132,7 +132,7 @@ public class Main extends Application {
         enterTransactions.setOnAction(e -> showEnterTransactionsScene());
         
         grid.add(addTransactionType, 0, 0);
-        grid.add(enterTransactions, 1, 0);
+        grid.add(enterTransactions, 0, 1);
         
         layout.setCenter(grid);
 
@@ -212,32 +212,101 @@ public class Main extends Application {
         grid.setVgap(10);
         grid.setPadding(new Insets(25, 25, 25, 25));
         
+        
         Label accNameLabel = new Label("Account Name:");
-        
-        Label transactionTypeLabel = new Label("Transaction Type:");
-        
-        Label transactionDateLabel = new Label("Date:");
-        
-        Label descriptionLabel = new Label("Description");
-        
-        Label amountLabel = new Label("Amount:");
-        
-        String tableCreator = "CREATE TABLE IF NOT EXISTS transactionsTable(" + 
-        					  "id INTEGER PRIMARY KEY," +
-        					  "accName text NOT NULL" +
-        					  "transactionType text NOT NULL" +
-        					  "transactionDate date NOT NULL" +
-        					  "description text NOT NULL" +
-        					  "money double NOT NULL" +
-        					  ")";
-        
+        ComboBox<String> accNameSelection = new ComboBox<String>();
+        //populate list
+        String accNameQuery = "SELECT accountName FROM accounts";
         try (var conn = DriverManager.getConnection(url)) {
             if (conn != null) {
-                //
+            	var pstmt = conn.prepareStatement(accNameQuery);
+                var results = pstmt.executeQuery();
+                
+                while (results.next()) {
+                	String accN = results.getString(1);
+                	accNameSelection.getItems().add(accN);
+                }
             }
         } catch (SQLException e) {
             System.err.println(e.getMessage());
         }
+        
+        
+        Label transactionTypeLabel = new Label("Transaction Type:");
+        ComboBox<String> transTypeSelection = new ComboBox<String>();
+        //populate list
+        String transTypeQuery = "SELECT tname FROM transactionTypeTable";
+        try (var conn = DriverManager.getConnection(url)) {
+            if (conn != null) {
+            	var pstmt = conn.prepareStatement(transTypeQuery);
+                var results = pstmt.executeQuery();
+                while (results.next()) {
+                	String ttype = results.getString(1);
+                	transTypeSelection.getItems().add(ttype);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println(e.getMessage());
+        }
+        
+        
+        Label transactionDateLabel = new Label("Date:");
+        DatePicker transDatePicker = new DatePicker(LocalDate.now());
+        
+        Label descriptionLabel = new Label("Description");
+        TextField descriptionField = new TextField();
+        
+        Label amountLabel = new Label("Amount:");
+        TextField amountField = new TextField();
+        
+        Label payDepLabel = new Label("Payment or Deposit?");
+        ComboBox<String> payOrDep = new ComboBox<String>();
+        payOrDep.getItems().add("Payment");
+        payOrDep.getItems().add("Deposit");
+        
+        Button entryButton = new Button("Enter Transaction");
+        entryButton.setOnAction(e -> {
+        	String nam = accNameSelection.getValue();
+        	String typ = transTypeSelection.getValue();
+        	LocalDate tDate = transDatePicker.getValue();
+        	String des = descriptionField.getText();
+        	String amtS = amountField.getText();
+        	String payDep = payOrDep.getValue();
+        	
+        	if (nam == null || typ == null || des.equals("") || amtS.equals("") || payDep == null) {
+        		showAlert("Error", "Please fill all required fields.");
+        	}
+        	else if (!amtS.matches("-?\\d+(\\.\\d+)?")) {
+        		showAlert("Error", "Amount must be a number");
+        	}
+        	else {
+        		double amt = Double.parseDouble(amtS);
+        		if (payDep.equals("Payment")) amt *= -1;
+        		if (Transaction.enterNewTransaction(nam, typ, tDate, des, amt)) showAlert("Success!", "Transaction confirmed.");
+        		else showAlert("Error", "oops");
+        	}
+        	
+        	accNameSelection.valueProperty().set(null);
+        	transTypeSelection.valueProperty().set(null);
+        	transDatePicker.setValue(LocalDate.now());
+        	descriptionField.clear();
+        	amountField.clear();
+        });
+        
+        grid.add(accNameLabel, 0, 0);
+        grid.add(accNameSelection, 1, 0);
+        grid.add(transactionTypeLabel, 0, 1);
+        grid.add(transTypeSelection, 1, 1);
+        grid.add(transactionDateLabel, 0, 2);
+        grid.add(transDatePicker, 1, 2);
+        grid.add(descriptionLabel, 0, 3);
+        grid.add(descriptionField, 1, 3);
+        grid.add(payDepLabel, 0, 4);
+        grid.add(payOrDep, 1, 4);
+        grid.add(amountLabel, 0, 5);
+        grid.add(amountField, 1, 5);
+        grid.add(entryButton, 1, 6);
+        
         
         layout.setCenter(grid);
 
@@ -337,9 +406,7 @@ public class Main extends Application {
             
             if (accountName.equals("") || openingBalance.equals("")) {
             	showAlert("Error", "Please fill all required fields.");
-            	accountNameField.clear();
-                openingDatePicker.setValue(LocalDate.now());
-                openingBalanceField.clear();
+            	
             }
             //else if (accountName is a duplicate)
             /*else if (Account.allAccNames.contains(accountName)) {
@@ -359,14 +426,12 @@ public class Main extends Application {
                 // Here you would typically save this data to your persistence layer
                 //System.out.println("Account Created: " + accountName + ", " + openingDate + ", $" + openingBalance);
 
-                // Clear fields after submission
-                accountNameField.clear();
-                openingDatePicker.setValue(LocalDate.now());
-                openingBalanceField.clear();
-
                 
                 
             }
+            accountNameField.clear();
+            openingDatePicker.setValue(LocalDate.now());
+            openingBalanceField.clear();
         });
 
         grid.add(accountNameLabel, 0, 0);
@@ -399,7 +464,7 @@ public class Main extends Application {
     	
     	//creates table; not necessary anymore for now
     	
-    	var tbl = "CREATE TABLE IF NOT EXISTS dupeTester (" +
+    	var tbl = "CREATE TABLE IF NOT EXISTS accounts (" +
     			  "	accountName text PRIMARY KEY," +
     			  "	openingDate date NOT NULL," +
     			  "	balance double NOT NULL" +
