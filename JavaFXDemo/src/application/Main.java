@@ -112,6 +112,94 @@ public class Main extends Application {
         return centerContent;
     }
     
+    private void showTransTableScene() {
+    	BorderPane layout = new BorderPane();
+    	layout.setStyle("-fx-background-color: #E6FFE6;"); // Light green background
+
+        // Add the top bar
+        layout.setTop(createTopBar());
+        
+        GridPane grid = new GridPane();
+        grid.setAlignment(Pos.CENTER);
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(25, 25, 25, 25));
+        
+        Label myTransHead = new Label("MY TRANSACTIONS");
+        grid.add(myTransHead, 2, 0);
+        
+        String tableQuery = "SELECT accName,transactionType,transactionDate,description,money FROM transactionsTable ORDER BY transactionDate DESC";
+        try (var conn = DriverManager.getConnection(url)){
+        	if (conn != null) {
+        		var pstmt = conn.prepareStatement(tableQuery);
+                var results = pstmt.executeQuery();
+                int i = 1;
+                while (results.next()) {
+                	String an = results.getString(1);
+                	String tt = results.getString(2);
+                	java.sql.Date td = results.getDate(3);
+                	String de = results.getString(4);
+                	double m = results.getDouble(5);
+                	
+                	Label anLabel = new Label(an);
+                	Label ttLabel = new Label(tt);
+                	Label tdLabel = new Label("" + td);
+                	Label deLabel = new Label(de);
+                	Label mLabel = new Label(String.format("$%.2f", m));
+                	
+                	grid.add(anLabel, 0, i);
+                	grid.add(ttLabel, 1, i);
+                	grid.add(tdLabel, 2, i);
+                	grid.add(deLabel, 3, i);
+                	grid.add(mLabel, 4, i++);
+                }
+        	}
+        } catch (SQLException e) {
+        	System.err.println(e.getMessage());
+        }
+        
+        layout.setCenter(grid);
+
+        Scene transactionsScene = new Scene(layout, 800, 600);
+        primaryStage.setScene(transactionsScene);
+    }
+    private void showSchedTransEntryScene() {
+    	BorderPane layout = new BorderPane();
+    	layout.setStyle("-fx-background-color: #E6FFE6;"); // Light green background
+
+        // Add the top bar
+        layout.setTop(createTopBar());
+        
+        GridPane grid = new GridPane();
+        grid.setAlignment(Pos.CENTER);
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(25, 25, 25, 25));
+        
+        layout.setCenter(grid);
+
+        Scene transactionsScene = new Scene(layout, 800, 600);
+        primaryStage.setScene(transactionsScene);
+    }
+    private void showSchedTransTableScene() {
+    	BorderPane layout = new BorderPane();
+    	layout.setStyle("-fx-background-color: #E6FFE6;"); // Light green background
+
+        // Add the top bar
+        layout.setTop(createTopBar());
+        
+        GridPane grid = new GridPane();
+        grid.setAlignment(Pos.CENTER);
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(25, 25, 25, 25));
+        
+        layout.setCenter(grid);
+
+        Scene transactionsScene = new Scene(layout, 800, 600);
+        primaryStage.setScene(transactionsScene);
+    }
+    
     private void showTransactionsScene() {
     	BorderPane layout = new BorderPane();
     	layout.setStyle("-fx-background-color: #E6FFE6;"); // Light green background
@@ -127,12 +215,15 @@ public class Main extends Application {
         
         Button addTransactionType = new Button("Add New Transaction Type");
         Button enterTransactions = new Button("Enter Transactions");
+        Button viewTransactions = new Button("View Transactions");
         
         addTransactionType.setOnAction(e -> showAddTransactionsScene());
         enterTransactions.setOnAction(e -> showEnterTransactionsScene());
+        viewTransactions.setOnAction(e -> showTransTableScene());
         
         grid.add(addTransactionType, 0, 0);
         grid.add(enterTransactions, 0, 1);
+        grid.add(viewTransactions, 0, 2);
         
         layout.setCenter(grid);
 
@@ -256,13 +347,18 @@ public class Main extends Application {
         Label descriptionLabel = new Label("Description");
         TextField descriptionField = new TextField();
         
-        Label amountLabel = new Label("Amount:");
-        TextField amountField = new TextField();
+        Label paymentAmountLabel = new Label("Payment Amount:");
+        TextField paymentAmountField = new TextField();
         
+        Label depositAmountLabel = new Label("Deposit Amount:");
+        TextField depositAmountField = new TextField();
+        
+        /*
         Label payDepLabel = new Label("Payment or Deposit?");
         ComboBox<String> payOrDep = new ComboBox<String>();
         payOrDep.getItems().add("Payment");
         payOrDep.getItems().add("Deposit");
+        */
         
         Button entryButton = new Button("Enter Transaction");
         entryButton.setOnAction(e -> {
@@ -270,18 +366,31 @@ public class Main extends Application {
         	String typ = transTypeSelection.getValue();
         	LocalDate tDate = transDatePicker.getValue();
         	String des = descriptionField.getText();
-        	String amtS = amountField.getText();
-        	String payDep = payOrDep.getValue();
+        	String payAmt = paymentAmountField.getText();
+        	String depAmt = depositAmountField.getText();
+        	//String payDep = payOrDep.getValue();
         	
-        	if (nam == null || typ == null || des.equals("") || amtS.equals("") || payDep == null) {
+        	if (nam == null || typ == null || des.equals("") || (depAmt.equals("") && payAmt.equals(""))) {
         		showAlert("Error", "Please fill all required fields.");
         	}
-        	else if (!amtS.matches("-?\\d+(\\.\\d+)?")) {
+        	else if (!depAmt.matches("-?\\d+(\\.\\d+)?") && payAmt.equals("")) {
+        		showAlert("Error", "Amount must be a number");
+        	}
+        	else if (!payAmt.matches("-?\\d+(\\.\\d+)?") && depAmt.equals("")) {
+        		showAlert("Error", "Amount must be a number");
+        	}
+        	else if (!depAmt.matches("-?\\d+(\\.\\d+)?") && !payAmt.matches("-?\\d+(\\.\\d+)?")) {
         		showAlert("Error", "Amount must be a number");
         	}
         	else {
-        		double amt = Double.parseDouble(amtS);
-        		if (payDep.equals("Payment")) amt *= -1;
+        		double amt;
+        		double pamt;
+        		if (payAmt.equals("")) pamt = 0;
+        		else pamt = Double.parseDouble(payAmt);
+        		if (depAmt.equals("")) amt = 0;
+        		else amt = Double.parseDouble(depAmt);
+        		amt -= pamt;
+        		//if (payDep.equals("Payment")) amt *= -1;
         		if (Transaction.enterNewTransaction(nam, typ, tDate, des, amt)) showAlert("Success!", "Transaction confirmed.");
         		else showAlert("Error", "oops");
         	}
@@ -290,7 +399,7 @@ public class Main extends Application {
         	transTypeSelection.valueProperty().set(null);
         	transDatePicker.setValue(LocalDate.now());
         	descriptionField.clear();
-        	amountField.clear();
+        	depositAmountField.clear();
         });
         
         grid.add(accNameLabel, 0, 0);
@@ -301,10 +410,12 @@ public class Main extends Application {
         grid.add(transDatePicker, 1, 2);
         grid.add(descriptionLabel, 0, 3);
         grid.add(descriptionField, 1, 3);
-        grid.add(payDepLabel, 0, 4);
-        grid.add(payOrDep, 1, 4);
-        grid.add(amountLabel, 0, 5);
-        grid.add(amountField, 1, 5);
+        //grid.add(payDepLabel, 0, 4);
+        //grid.add(payOrDep, 1, 4);
+        grid.add(paymentAmountLabel, 0, 4);
+        grid.add(paymentAmountField, 1, 4);
+        grid.add(depositAmountLabel, 0, 5);
+        grid.add(depositAmountField, 1, 5);
         grid.add(entryButton, 1, 6);
         
         
