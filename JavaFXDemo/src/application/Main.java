@@ -176,6 +176,97 @@ public class Main extends Application {
         grid.setVgap(10);
         grid.setPadding(new Insets(25, 25, 25, 25));
         
+        Label schedNameLabel = new Label("Schedule Name:");
+        TextField schedNameField = new TextField();
+        
+        Label accNameLabel = new Label("Account Label:");
+        ComboBox<String> accNameSelection = new ComboBox<String>();
+        //populate list
+        String accNameQuery = "SELECT accountName FROM accountsV2";
+        try (var conn = DriverManager.getConnection(url)) {
+            if (conn != null) {
+            	var pstmt = conn.prepareStatement(accNameQuery);
+                var results = pstmt.executeQuery();
+                
+                while (results.next()) {
+                	String accN = results.getString(1);
+                	accNameSelection.getItems().add(accN);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println(e.getMessage());
+        }
+        
+        Label transTypeLabel = new Label("Transaction Type:");
+        ComboBox<String> transTypeSelection = new ComboBox<String>();
+        //populate list
+        String transTypeQuery = "SELECT tname FROM transactionTypeTable";
+        try (var conn = DriverManager.getConnection(url)) {
+            if (conn != null) {
+            	var pstmt = conn.prepareStatement(transTypeQuery);
+                var results = pstmt.executeQuery();
+                while (results.next()) {
+                	String ttype = results.getString(1);
+                	transTypeSelection.getItems().add(ttype);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println(e.getMessage());
+        }
+        
+        Label frequencyLabel = new Label("Frequency:");
+        ComboBox<String> frequencySelect = new ComboBox<String>();
+        frequencySelect.getItems().add("Monthly");
+        
+        Label dueDateLabel = new Label("Due Date:");
+        TextField dueDateField = new TextField();
+        
+        Label payAmtLabel = new Label("Payment Amount:");
+        TextField payAmtField = new TextField();
+        
+        Button entryButton = new Button("Schedule Transaction");
+        entryButton.setOnAction(e -> {
+        	String schName = schedNameField.getText();
+        	String accName = accNameSelection.getValue();
+        	String tType = transTypeSelection.getValue();
+        	String freq = frequencySelect.getValue();
+        	String due = dueDateField.getText();
+        	String payAmt = payAmtField.getText();
+        	
+        	if (schName.equals("") || accName == null || tType == null || freq == null || due.equals("") || payAmt.equals("")) {
+        		showAlert("Error", "Please fill all required fields.");
+        	} else if (!due.matches("\\d+")) {
+        		showAlert("Error", "Due date must be a number.");
+        	} else if (!payAmt.matches("-?\\d+(\\.\\d+)?")) {
+        		showAlert("Error", "Paymnet amount must be a number.");
+        	}
+        	else {
+        		int dueInt = Integer.parseInt(due);
+        		if (dueInt < 1 || dueInt > 31) {
+        			showAlert("Error", "Invalid date.");
+        			return;
+        		}
+        		double amt = Double.parseDouble(payAmt);
+        		if (ScheduledTransaction.enterScheduledTransaction(schName, accName, tType, freq, dueInt, amt)) {
+        			showAlert("Success!", "Transaction scheduled.");
+        		} else showAlert("Error", "Something went wrong.");
+        	}
+        });
+        
+        grid.add(schedNameLabel,0,0);
+        grid.add(schedNameField,1,0);
+        grid.add(accNameLabel,0,1);
+        grid.add(accNameSelection,1,1);
+        grid.add(transTypeLabel,0,2);
+        grid.add(transTypeSelection,1,2);
+        grid.add(frequencyLabel,0,3);
+        grid.add(frequencySelect,1,3);
+        grid.add(dueDateLabel,0,4);
+        grid.add(dueDateField,1,4);
+        grid.add(payAmtLabel,0,5);
+        grid.add(payAmtField,1,5);
+        grid.add(entryButton,0,6);
+        
         layout.setCenter(grid);
 
         Scene transactionsScene = new Scene(layout, 800, 600);
@@ -193,6 +284,42 @@ public class Main extends Application {
         grid.setHgap(10);
         grid.setVgap(10);
         grid.setPadding(new Insets(25, 25, 25, 25));
+        
+        Label title = new Label("SCHEDULED TRANSACTIONS");
+        grid.add(title, 3, 0);
+        
+        String tableQuery = "SELECT scheduleName,accountName,transactionType,frequency,dueDate,payAmount FROM schedTransactionTable ORDER BY dueDate ASC;";
+        try (var conn = DriverManager.getConnection(url)){
+        	if (conn != null) {
+        		var pstmt = conn.prepareStatement(tableQuery);
+                var results = pstmt.executeQuery();
+                int i = 1;
+                while (results.next()) {
+                	String sn = results.getString(1);
+                	String an = results.getString(2);
+                	String tt = results.getString(3);
+                	String fq = results.getString(4);
+                	int dd = results.getInt(5);
+                	double pa = results.getDouble(6);
+                	
+                	Label snL = new Label(sn);
+                	Label anL = new Label(an);
+                	Label ttL = new Label(tt);
+                	Label fqL = new Label(fq);
+                	Label ddL = new Label("" + dd);
+                	Label paL = new Label(String.format("$%.2f", pa));
+                	
+                	grid.add(snL, 0, i);
+                	grid.add(anL, 1, i);
+                	grid.add(ttL, 2, i);
+                	grid.add(fqL, 4, i);
+                	grid.add(ddL, 5, i);
+                	grid.add(paL, 6, i++);
+                }
+        	}
+        } catch (SQLException e) {
+        	System.err.println(e.getMessage());
+        }
         
         layout.setCenter(grid);
 
@@ -216,14 +343,20 @@ public class Main extends Application {
         Button addTransactionType = new Button("Add New Transaction Type");
         Button enterTransactions = new Button("Enter Transactions");
         Button viewTransactions = new Button("View Transactions");
+        Button scheduleTransactions = new Button("Schedule Transactions");
+        Button viewScheduled = new Button("View Scheduled Transactions");
         
         addTransactionType.setOnAction(e -> showAddTransactionsScene());
         enterTransactions.setOnAction(e -> showEnterTransactionsScene());
         viewTransactions.setOnAction(e -> showTransTableScene());
+        scheduleTransactions.setOnAction(e -> showSchedTransEntryScene());
+        viewScheduled.setOnAction(e -> showSchedTransTableScene());
         
         grid.add(addTransactionType, 0, 0);
         grid.add(enterTransactions, 0, 1);
         grid.add(viewTransactions, 0, 2);
+        grid.add(scheduleTransactions, 0, 3);
+        grid.add(viewScheduled, 0, 4);
         
         layout.setCenter(grid);
 
@@ -307,7 +440,7 @@ public class Main extends Application {
         Label accNameLabel = new Label("Account Name:");
         ComboBox<String> accNameSelection = new ComboBox<String>();
         //populate list
-        String accNameQuery = "SELECT accountName FROM accounts";
+        String accNameQuery = "SELECT accountName FROM accountsV2";
         try (var conn = DriverManager.getConnection(url)) {
             if (conn != null) {
             	var pstmt = conn.prepareStatement(accNameQuery);
@@ -441,7 +574,7 @@ public class Main extends Application {
         Label myAccountsHead = new Label("ACCOUNTS");
         grid.add(myAccountsHead, 2, 0);
         
-        String tableQuery = "SELECT accountName,openingDate,balance FROM accounts ORDER BY openingDate DESC;";
+        String tableQuery = "SELECT accountName,openingDate,balance FROM accountsV2 ORDER BY openingDate DESC;";
     	try (var conn = DriverManager.getConnection(url)) {
             if (conn != null) {
                 //var meta = conn.getMetaData();
@@ -575,7 +708,7 @@ public class Main extends Application {
     	
     	//creates table; not necessary anymore for now
     	
-    	var tbl = "CREATE TABLE IF NOT EXISTS accounts (" +
+    	var tbl = "CREATE TABLE IF NOT EXISTS accountsV2 (" +
     			  "	accountName text PRIMARY KEY," +
     			  "	openingDate date NOT NULL," +
     			  "	balance double NOT NULL" +

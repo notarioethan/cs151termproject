@@ -30,7 +30,7 @@ public class Account {
 		Date openD = Date.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant());
 		double balan = bal;
 		
-		String inserter = "INSERT INTO accounts(accountName,openingDate,balance) VALUES(?,?,?)";
+		String inserter = "INSERT INTO accountsV2(accountName,openingDate,balance) VALUES(?,?,?)";
 		//String sorter = "SELECT openingDate FROM accounts ORDER BY openingDate DESC;";
 		
 		try (var conn = DriverManager.getConnection(url)) {
@@ -54,7 +54,7 @@ public class Account {
 	
 	public boolean editBalance(double amt) {
 		balance += amt;
-		String updater = "UPDATE accounts SET balance = ? WHERE accountName = ?";// + accountName;
+		String updater = "UPDATE accountsV2 SET balance = ? WHERE accountName = ?";// + accountName;
 		try (var conn = DriverManager.getConnection(url);
 	            var pstmt = conn.prepareStatement(updater)) {
 	            // set the parameters

@@ -32,7 +32,7 @@ public class Transaction {
 				  "money double NOT NULL" +
 				  ")";
 
-		String accGetter = "SELECT accountName,openingDate,balance FROM accounts WHERE accountName = ?";
+		String accGetter = "SELECT accountName,openingDate,balance FROM accountsV2 WHERE accountName = ?";
 		
 		String transInserter = "INSERT INTO transactionsTable(accName,transactionType,transactionDate,description,money) VALUES(?,?,?,?,?)";
 		
