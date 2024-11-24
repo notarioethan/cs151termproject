@@ -63,6 +63,7 @@ public class Account {
 	            
 	            // update
 	            pstmt.executeUpdate();
+	            pstmt.close();
 	            return true;
 	        } catch (SQLException e) {
 	            System.err.println(e.getMessage());

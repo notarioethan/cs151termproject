@@ -24,10 +24,33 @@ public class ScheduledTransaction {
 		payAmount = amt;
 	}
 	
+	public static boolean editScheduledTransaction(String oldName, String sName, String accName, String tType, String freq, int ddate, double amt) {
+		String updater = "UPDATE schedTransactionTableV2 SET scheduleName = ?,accountName = ?,transactionType = ?,frequency = ?,dueDate = ?,payAmount = ? WHERE scheduleName = '" + oldName + "'";
+		try (var conn = DriverManager.getConnection(url)){
+			if (conn != null) {
+				
+				var pstmt = conn.prepareStatement(updater);
+				pstmt.setString(1, sName);
+				pstmt.setString(2, accName);
+				pstmt.setString(3, tType);
+				pstmt.setString(4, freq);
+				pstmt.setInt(5, ddate);
+				pstmt.setDouble(6, amt);
+				pstmt.executeUpdate();
+				
+				return true;
+				
+			}
+		} catch (SQLException e) {
+			System.err.println(e.getMessage());
+		}
+		return false;
+	}
+	
 	public static boolean enterScheduledTransaction(String sName, String accName, String tType, String freq, int ddate, double amt) {
 		//if (ddate < 1 || ddate > 31) return false;
 		
-		String tableCreator = "CREATE TABLE IF NOT EXISTS schedTransactionTable(" + 
+		String tableCreator = "CREATE TABLE IF NOT EXISTS schedTransactionTableV2(" + 
 								"scheduleName text PRIMARY KEY," +
 								"accountName text NOT NULL," +
 								"transactionType text NOT NULL," +
@@ -36,7 +59,7 @@ public class ScheduledTransaction {
 								"payAmount double NOT NULL" +
 								")";
 		//String accGetter = "SELECT accountName,openingDate,balance FROM accountsV2 WHERE accountName = ?";
-		String inserter = "INSERT INTO schedTransactionTable(scheduleName,accountName,transactionType,frequency,dueDate,payAmount) VALUES(?,?,?,?,?,?)";
+		String inserter = "INSERT INTO schedTransactionTableV2(scheduleName,accountName,transactionType,frequency,dueDate,payAmount) VALUES(?,?,?,?,?,?)";
 		
 		try (var conn = DriverManager.getConnection(url)){
 			if (conn != null) {

@@ -112,6 +112,373 @@ public class Main extends Application {
         return centerContent;
     }
     
+    private void showSearchTransactionsScene() {
+    	BorderPane layout = new BorderPane();
+    	layout.setStyle("-fx-background-color: #E6FFE6;"); // Light green background
+
+        // Add the top bar
+        layout.setTop(createTopBar());
+        
+        GridPane grid = new GridPane();
+        grid.setAlignment(Pos.CENTER);
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(25, 25, 25, 25));
+    	//
+        TextField searchBox = new TextField();
+        Button searchButton = new Button("Search");
+        searchButton.setOnAction(e -> {
+        	String srch = searchBox.getText();
+        	if (!srch.equals("")) {
+        		String query = "SELECT accName,transactionType,transactionDate,description,money,id FROM transactionsTableV2 ";
+            	query += "WHERE description LIKE '%" + srch + "%' ORDER BY transactionDate DESC";
+            	
+            	try (var conn = DriverManager.getConnection(url)){
+                	if (conn != null) {
+                		var pstmt = conn.prepareStatement(query);
+                        var results = pstmt.executeQuery();
+                        int i = 1;
+                        while (results.next()) {
+                        	String an = results.getString(1);
+                        	String tt = results.getString(2);
+                        	java.sql.Date td = results.getDate(3);
+                        	String de = results.getString(4);
+                        	double m = results.getDouble(5);
+                        	int id = results.getInt(6);
+                        	
+                        	Label anLabel = new Label(an);
+                        	Label ttLabel = new Label(tt);
+                        	Label tdLabel = new Label("" + td);
+                        	Label deLabel = new Label(de);
+                        	Label mLabel = new Label(String.format("$%.2f", m));
+                        	Button selectButton = new Button("Edit");
+                        	selectButton.setOnAction(ew -> showEditTransactionsScene(id));
+                        	
+                        	grid.add(anLabel, 0, i);
+                        	grid.add(ttLabel, 1, i);
+                        	grid.add(tdLabel, 2, i);
+                        	grid.add(deLabel, 3, i);
+                        	grid.add(mLabel, 4, i);
+                        	grid.add(selectButton, 5, i++);
+                        }
+                	}
+                } catch (SQLException ex) {
+                	System.err.println(ex.getMessage());
+                }
+        	}
+        });
+        grid.add(searchBox, 0, 0);
+        grid.add(searchButton, 1, 0);
+        //
+        layout.setCenter(grid);
+
+        Scene transactionsScene = new Scene(layout, 800, 600);
+        primaryStage.setScene(transactionsScene);
+    }
+    private void showEditTransactionsScene(int id) {
+    	BorderPane layout = new BorderPane();
+    	layout.setStyle("-fx-background-color: #E6FFE6;"); // Light green background
+
+        // Add the top bar
+        layout.setTop(createTopBar());
+        
+        GridPane grid = new GridPane();
+        grid.setAlignment(Pos.CENTER);
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(25, 25, 25, 25));
+    	//
+        
+        Label accNameLabel = new Label("Account Name:");
+        ComboBox<String> accNameSelection = new ComboBox<String>();
+        //populate list
+        String accNameQuery = "SELECT accountName FROM accountsV2";
+        try (var conn = DriverManager.getConnection(url)) {
+            if (conn != null) {
+            	var pstmt = conn.prepareStatement(accNameQuery);
+                var results = pstmt.executeQuery();
+                
+                while (results.next()) {
+                	String accN = results.getString(1);
+                	accNameSelection.getItems().add(accN);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println(e.getMessage());
+        }
+        
+        
+        Label transactionTypeLabel = new Label("Transaction Type:");
+        ComboBox<String> transTypeSelection = new ComboBox<String>();
+        //populate list
+        String transTypeQuery = "SELECT tname FROM transactionTypeTable";
+        try (var conn = DriverManager.getConnection(url)) {
+            if (conn != null) {
+            	var pstmt = conn.prepareStatement(transTypeQuery);
+                var results = pstmt.executeQuery();
+                while (results.next()) {
+                	String ttype = results.getString(1);
+                	transTypeSelection.getItems().add(ttype);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println(e.getMessage());
+        }
+        
+        
+        Label transactionDateLabel = new Label("Date:");
+        DatePicker transDatePicker = new DatePicker(LocalDate.now());
+        
+        Label descriptionLabel = new Label("Description");
+        TextField descriptionField = new TextField();
+        
+        Label paymentAmountLabel = new Label("Payment Amount:");
+        TextField paymentAmountField = new TextField();
+        
+        Label depositAmountLabel = new Label("Deposit Amount:");
+        TextField depositAmountField = new TextField();
+        
+        
+        Button saveChanges = new Button("Save Changes");
+        saveChanges.setOnAction(e -> {
+        	//insert from entry button
+        	String nam = accNameSelection.getValue();
+        	String typ = transTypeSelection.getValue();
+        	LocalDate tDate = transDatePicker.getValue();
+        	String des = descriptionField.getText();
+        	String payAmt = paymentAmountField.getText();
+        	String depAmt = depositAmountField.getText();
+        	//String payDep = payOrDep.getValue();
+        	
+        	if (nam == null || typ == null || des.equals("") || (depAmt.equals("") && payAmt.equals(""))) {
+        		showAlert("Error", "Please fill all required fields.");
+        	}
+        	else if (!depAmt.matches("-?\\d+(\\.\\d+)?") && payAmt.equals("")) {
+        		showAlert("Error", "Amount must be a number");
+        	}
+        	else if (!payAmt.matches("-?\\d+(\\.\\d+)?") && depAmt.equals("")) {
+        		showAlert("Error", "Amount must be a number");
+        	}
+        	else if (!depAmt.matches("-?\\d+(\\.\\d+)?") && !payAmt.matches("-?\\d+(\\.\\d+)?")) {
+        		showAlert("Error", "Amount must be a number");
+        	}
+        	else {
+        		double amt;
+        		double pamt;
+        		if (payAmt.equals("")) pamt = 0;
+        		else pamt = Double.parseDouble(payAmt);
+        		if (depAmt.equals("")) amt = 0;
+        		else amt = Double.parseDouble(depAmt);
+        		amt -= pamt;
+        		//if (payDep.equals("Payment")) amt *= -1;
+        		if (Transaction.editTransaction(id, nam, typ, tDate, des, amt)) showAlert("Success!", "Changes saved.");
+        		else showAlert("Error", "oops");
+        	}
+        	
+        	accNameSelection.valueProperty().set(null);
+        	transTypeSelection.valueProperty().set(null);
+        	transDatePicker.setValue(LocalDate.now());
+        	descriptionField.clear();
+        	depositAmountField.clear();
+        });
+        
+        grid.add(accNameLabel, 0, 0);
+        grid.add(accNameSelection, 1, 0);
+        grid.add(transactionTypeLabel, 0, 1);
+        grid.add(transTypeSelection, 1, 1);
+        grid.add(transactionDateLabel, 0, 2);
+        grid.add(transDatePicker, 1, 2);
+        grid.add(descriptionLabel, 0, 3);
+        grid.add(descriptionField, 1, 3);
+        //grid.add(payDepLabel, 0, 4);
+        //grid.add(payOrDep, 1, 4);
+        grid.add(paymentAmountLabel, 0, 4);
+        grid.add(paymentAmountField, 1, 4);
+        grid.add(depositAmountLabel, 0, 5);
+        grid.add(depositAmountField, 1, 5);
+        grid.add(saveChanges, 1, 6);
+        //
+        layout.setCenter(grid);
+
+        Scene transactionsScene = new Scene(layout, 800, 600);
+        primaryStage.setScene(transactionsScene);
+    }
+    private void showSearchScheduledScene() {
+    	BorderPane layout = new BorderPane();
+    	layout.setStyle("-fx-background-color: #E6FFE6;"); // Light green background
+
+        // Add the top bar
+        layout.setTop(createTopBar());
+        
+        GridPane grid = new GridPane();
+        grid.setAlignment(Pos.CENTER);
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(25, 25, 25, 25));
+    	//
+        TextField searchBox = new TextField();
+        Button searchButton = new Button("Search");
+        
+        searchButton.setOnAction(e -> {
+        	String srch = searchBox.getText();
+        	if (!srch.equals("")) {
+        		String query = "SELECT scheduleName,accountName,transactionType,frequency,dueDate,payAmount FROM schedTransactionTableV2 ";
+        		query += "WHERE scheduleName LIKE '%" + srch + "%' ORDER BY dueDate ASC;";
+        		try (var conn = DriverManager.getConnection(url)){
+                	if (conn != null) {
+                		var pstmt = conn.prepareStatement(query);
+                        var results = pstmt.executeQuery();
+                        int i = 1;
+                        while (results.next()) {
+                        	String sn = results.getString(1);
+                        	String an = results.getString(2);
+                        	String tt = results.getString(3);
+                        	String fq = results.getString(4);
+                        	int dd = results.getInt(5);
+                        	double pa = results.getDouble(6);
+                        	
+                        	Label snL = new Label(sn);
+                        	Label anL = new Label(an);
+                        	Label ttL = new Label(tt);
+                        	Label fqL = new Label(fq);
+                        	Label ddL = new Label("" + dd);
+                        	Label paL = new Label(String.format("$%.2f", pa));
+                        	Button selectButton = new Button("Edit");
+                        	selectButton.setOnAction(a -> showEditScheduledScene(sn));
+                        	
+                        	grid.add(snL, 0, i);
+                        	grid.add(anL, 1, i);
+                        	grid.add(ttL, 2, i);
+                        	grid.add(fqL, 3, i);
+                        	grid.add(ddL, 4, i);
+                        	grid.add(paL, 5, i);
+                        	grid.add(selectButton, 6, i++);
+                        }
+                	}
+                } catch (SQLException er) {
+                	System.err.println(er.getMessage());
+                }
+        	}
+        });
+        
+        grid.add(searchBox, 0, 0);
+        grid.add(searchButton, 1, 0);
+        //
+        layout.setCenter(grid);
+
+        Scene transactionsScene = new Scene(layout, 800, 600);
+        primaryStage.setScene(transactionsScene);
+    }
+    private void showEditScheduledScene(String oldName) {
+    	BorderPane layout = new BorderPane();
+    	layout.setStyle("-fx-background-color: #E6FFE6;"); // Light green background
+
+        // Add the top bar
+        layout.setTop(createTopBar());
+        
+        GridPane grid = new GridPane();
+        grid.setAlignment(Pos.CENTER);
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(25, 25, 25, 25));
+    	//
+        Label schedNameLabel = new Label("Schedule Name:");
+        TextField schedNameField = new TextField();
+        
+        Label accNameLabel = new Label("Account Name:");
+        ComboBox<String> accNameSelection = new ComboBox<String>();
+        //populate list
+        String accNameQuery = "SELECT accountName FROM accountsV2";
+        try (var conn = DriverManager.getConnection(url)) {
+            if (conn != null) {
+            	var pstmt = conn.prepareStatement(accNameQuery);
+                var results = pstmt.executeQuery();
+                
+                while (results.next()) {
+                	String accN = results.getString(1);
+                	accNameSelection.getItems().add(accN);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println(e.getMessage());
+        }
+        
+        Label transTypeLabel = new Label("Transaction Type:");
+        ComboBox<String> transTypeSelection = new ComboBox<String>();
+        //populate list
+        String transTypeQuery = "SELECT tname FROM transactionTypeTable";
+        try (var conn = DriverManager.getConnection(url)) {
+            if (conn != null) {
+            	var pstmt = conn.prepareStatement(transTypeQuery);
+                var results = pstmt.executeQuery();
+                while (results.next()) {
+                	String ttype = results.getString(1);
+                	transTypeSelection.getItems().add(ttype);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println(e.getMessage());
+        }
+        
+        Label frequencyLabel = new Label("Frequency:");
+        ComboBox<String> frequencySelect = new ComboBox<String>();
+        frequencySelect.getItems().add("Monthly");
+        
+        Label dueDateLabel = new Label("Due Date:");
+        TextField dueDateField = new TextField();
+        
+        Label payAmtLabel = new Label("Payment Amount:");
+        TextField payAmtField = new TextField();
+        
+        Button saveChanges = new Button("Save Changes");
+        saveChanges.setOnAction(e -> {
+        	String schName = schedNameField.getText();
+        	String accName = accNameSelection.getValue();
+        	String tType = transTypeSelection.getValue();
+        	String freq = frequencySelect.getValue();
+        	String due = dueDateField.getText();
+        	String payAmt = payAmtField.getText();
+        	
+        	if (schName.equals("") || accName == null || tType == null || freq == null || due.equals("") || payAmt.equals("")) {
+        		showAlert("Error", "Please fill all required fields.");
+        	} else if (!due.matches("\\d+")) {
+        		showAlert("Error", "Due date must be a number.");
+        	} else if (!payAmt.matches("-?\\d+(\\.\\d+)?")) {
+        		showAlert("Error", "Paymnet amount must be a number.");
+        	}
+        	else {
+        		int dueInt = Integer.parseInt(due);
+        		if (dueInt < 1 || dueInt > 31) {
+        			showAlert("Error", "Invalid date.");
+        			return;
+        		}
+        		double amt = Double.parseDouble(payAmt);
+        		if (ScheduledTransaction.editScheduledTransaction(oldName, schName, accName, tType, freq, dueInt, amt)) {
+        			showAlert("Success!", "Changes saved.");
+        		} else showAlert("Error", "Something went wrong.");
+        	}
+        });
+        
+        grid.add(schedNameLabel,0,0);
+        grid.add(schedNameField,1,0);
+        grid.add(accNameLabel,0,1);
+        grid.add(accNameSelection,1,1);
+        grid.add(transTypeLabel,0,2);
+        grid.add(transTypeSelection,1,2);
+        grid.add(frequencyLabel,0,3);
+        grid.add(frequencySelect,1,3);
+        grid.add(dueDateLabel,0,4);
+        grid.add(dueDateField,1,4);
+        grid.add(payAmtLabel,0,5);
+        grid.add(payAmtField,1,5);
+        grid.add(saveChanges,0,6);
+        //
+        layout.setCenter(grid);
+
+        Scene transactionsScene = new Scene(layout, 800, 600);
+        primaryStage.setScene(transactionsScene);
+    }
+    
     private void showTransTableScene() {
     	BorderPane layout = new BorderPane();
     	layout.setStyle("-fx-background-color: #E6FFE6;"); // Light green background
@@ -128,7 +495,7 @@ public class Main extends Application {
         Label myTransHead = new Label("MY TRANSACTIONS");
         grid.add(myTransHead, 2, 0);
         
-        String tableQuery = "SELECT accName,transactionType,transactionDate,description,money FROM transactionsTable ORDER BY transactionDate DESC";
+        String tableQuery = "SELECT accName,transactionType,transactionDate,description,money FROM transactionsTableV2 ORDER BY transactionDate DESC";
         try (var conn = DriverManager.getConnection(url)){
         	if (conn != null) {
         		var pstmt = conn.prepareStatement(tableQuery);
@@ -179,7 +546,7 @@ public class Main extends Application {
         Label schedNameLabel = new Label("Schedule Name:");
         TextField schedNameField = new TextField();
         
-        Label accNameLabel = new Label("Account Label:");
+        Label accNameLabel = new Label("Account Name:");
         ComboBox<String> accNameSelection = new ComboBox<String>();
         //populate list
         String accNameQuery = "SELECT accountName FROM accountsV2";
@@ -249,8 +616,15 @@ public class Main extends Application {
         		double amt = Double.parseDouble(payAmt);
         		if (ScheduledTransaction.enterScheduledTransaction(schName, accName, tType, freq, dueInt, amt)) {
         			showAlert("Success!", "Transaction scheduled.");
-        		} else showAlert("Error", "Something went wrong.");
+        		} else showAlert("Error", "Schedule name taken.");
         	}
+        	schedNameField.clear();
+        	accNameSelection.valueProperty().set(null);
+        	transTypeSelection.valueProperty().set(null);
+        	frequencySelect.valueProperty().set(null);
+        	dueDateField.clear();
+        	payAmtField.clear();
+        	
         });
         
         grid.add(schedNameLabel,0,0);
@@ -288,7 +662,7 @@ public class Main extends Application {
         Label title = new Label("SCHEDULED TRANSACTIONS");
         grid.add(title, 3, 0);
         
-        String tableQuery = "SELECT scheduleName,accountName,transactionType,frequency,dueDate,payAmount FROM schedTransactionTable ORDER BY dueDate ASC;";
+        String tableQuery = "SELECT scheduleName,accountName,transactionType,frequency,dueDate,payAmount FROM schedTransactionTableV2 ORDER BY dueDate ASC;";
         try (var conn = DriverManager.getConnection(url)){
         	if (conn != null) {
         		var pstmt = conn.prepareStatement(tableQuery);
@@ -345,18 +719,24 @@ public class Main extends Application {
         Button viewTransactions = new Button("View Transactions");
         Button scheduleTransactions = new Button("Schedule Transactions");
         Button viewScheduled = new Button("View Scheduled Transactions");
+        Button editTransactions = new Button("Edit Transactions");
+        Button editScheduleds = new Button("Edit Scheduled Transactions");
         
         addTransactionType.setOnAction(e -> showAddTransactionsScene());
         enterTransactions.setOnAction(e -> showEnterTransactionsScene());
         viewTransactions.setOnAction(e -> showTransTableScene());
         scheduleTransactions.setOnAction(e -> showSchedTransEntryScene());
         viewScheduled.setOnAction(e -> showSchedTransTableScene());
+        editTransactions.setOnAction(e -> showSearchTransactionsScene());
+        editScheduleds.setOnAction(e -> showSearchScheduledScene());
         
         grid.add(addTransactionType, 0, 0);
         grid.add(enterTransactions, 0, 1);
-        grid.add(viewTransactions, 0, 2);
-        grid.add(scheduleTransactions, 0, 3);
-        grid.add(viewScheduled, 0, 4);
+        grid.add(viewTransactions, 1, 1);
+        grid.add(scheduleTransactions, 0, 2);
+        grid.add(viewScheduled, 1, 2);
+        grid.add(editTransactions, 2, 1);
+        grid.add(editScheduleds, 2, 2);
         
         layout.setCenter(grid);
 
