@@ -32,6 +32,7 @@ public class Main extends Application {
         homeScene = createHomeScene();
         primaryStage.setScene(homeScene);
         primaryStage.show();
+        checkScheduledsToday();
     }
 
     private Scene createHomeScene() {
@@ -67,6 +68,7 @@ public class Main extends Application {
         Button transactionsButton = new Button("Transactions");//user's transactions
         Button newAccountButton = new Button("New Account");//account creation
         Button myAccountsButton = new Button("My Accounts");//all of user's accounts
+        Button reportsButton = new Button("Reports");//transaction and scheduled transaction reports
 
         // Set button styles
         String buttonStyle = "-fx-background-color: #87CEFA; -fx-text-fill: black;";
@@ -74,14 +76,16 @@ public class Main extends Application {
         transactionsButton.setStyle("-fx-background-color: #90EE90; -fx-text-fill: black;");
         newAccountButton.setStyle("-fx-background-color: #90EE90; -fx-text-fill: black;");
         myAccountsButton.setStyle("-fx-background-color: #90EE90; -fx-text-fill: black;");
+        reportsButton.setStyle("-fx-background-color: #90EE90; -fx-text-fill: black;");
 
         // Set action for buttons
         newAccountButton.setOnAction(e -> showCreateAccountScene());
         myAccountsButton.setOnAction(e -> showMyAccountsScene());
         transactionsButton.setOnAction(e -> showTransactionsScene());
+        reportsButton.setOnAction(e -> showAllReportsScene());
 
         HBox.setMargin(logoView, new Insets(0, 0, 0, 10)); // Add left margin to logo
-        topBar.getChildren().addAll(logoView, aboutButton, transactionsButton, myAccountsButton, newAccountButton);
+        topBar.getChildren().addAll(logoView, aboutButton, transactionsButton, reportsButton, myAccountsButton, newAccountButton);
 
         return topBar;
     }
@@ -110,6 +114,295 @@ public class Main extends Application {
         centerContent.getChildren().addAll(welcomeLabel, logoView, budgetEaseLabel, taglineLabel);
 
         return centerContent;
+    }
+    
+    private void showAllReportsScene() {
+    	BorderPane layout = new BorderPane();
+    	layout.setStyle("-fx-background-color: #E6FFE6;"); // Light green background
+
+        // Add the top bar
+        layout.setTop(createTopBar());
+        
+        GridPane grid = new GridPane();
+        grid.setAlignment(Pos.CENTER);
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(25, 25, 25, 25));
+    	//
+        Label reportsLabel = new Label("Transaction Reports");
+        Button searchByAcc = new Button("Search by Account");
+        Button searchByType = new Button("Search by Type");
+        searchByAcc.setOnAction(e -> showTransReportScene());
+        searchByType.setOnAction(e -> showTransReportByTypeScene());
+        grid.add(reportsLabel, 0, 0);
+        grid.add(searchByAcc, 0, 1);
+        grid.add(searchByType, 0, 2);
+        //
+        layout.setCenter(grid);
+
+        Scene transactionsScene = new Scene(layout, 800, 600);
+        primaryStage.setScene(transactionsScene);
+    }
+    
+    private void showTransReportPage(String anS, Label ttLabel, Label tdLabel, Label deLabel, Label mLabel) {
+    	BorderPane layout = new BorderPane();
+    	layout.setStyle("-fx-background-color: #E6FFE6;"); // Light green background
+
+        // Add the top bar
+        layout.setTop(createTopBar());
+        
+        GridPane grid = new GridPane();
+        grid.setAlignment(Pos.CENTER);
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(25, 25, 25, 25));
+    	//
+        Button backButton = new Button("Back");
+        backButton.setOnAction(e -> showTransReportScene());
+        Label an = new Label("Account Name:");
+        Label tt = new Label("Transaction Type:");
+        Label td = new Label("Transaction Date:");
+        Label de = new Label("Description");
+        Label m = new Label("Money In/Out");
+        Label anLabel = new Label(anS);
+        grid.add(an, 0, 0);
+        grid.add(anLabel, 1, 0);
+        grid.add(tt, 0, 1);
+        grid.add(ttLabel, 1, 1);
+        grid.add(td, 0, 2);
+        grid.add(tdLabel, 1, 2);
+        grid.add(de, 0, 3);
+        grid.add(deLabel, 1, 3);
+        grid.add(m, 0, 4);
+        grid.add(mLabel, 1, 4);
+        grid.add(backButton, 1, 5);
+        //
+        layout.setCenter(grid);
+
+        Scene transactionsScene = new Scene(layout, 800, 600);
+        primaryStage.setScene(transactionsScene);
+    }
+    private void showTransReportScene(){
+    	BorderPane layout = new BorderPane();
+    	layout.setStyle("-fx-background-color: #E6FFE6;"); // Light green background
+
+        // Add the top bar
+        layout.setTop(createTopBar());
+        
+        GridPane grid = new GridPane();
+        grid.setAlignment(Pos.CENTER);
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(25, 25, 25, 25));
+    	//
+        ComboBox<String> selectBox = new ComboBox<String>();
+        //populate
+        String fillBox = "SELECT accountName FROM accountsV2";
+        try (var conn = DriverManager.getConnection(url)) {
+            if (conn != null) {
+            	var pstmt = conn.prepareStatement(fillBox);
+                var results = pstmt.executeQuery();
+                
+                while (results.next()) {
+                	String accN = results.getString(1);
+                	selectBox.getItems().add(accN);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println(e.getMessage());
+        }
+        Button selectButton = new Button("Select Account");
+        //
+        selectButton.setOnAction(a -> {
+        	String an = selectBox.getValue();
+        	String query = "SELECT transactionType,transactionDate,description,money FROM transactionsTableV2 WHERE accName = '";
+        	query += an + "' ORDER BY transactionDate DESC";
+        	try (var conn = DriverManager.getConnection(url)){
+        		if (conn != null) {
+        			var pstmt = conn.prepareStatement(query);
+                    var results = pstmt.executeQuery();
+                    int i = 1;
+                    
+                    if (an == null) {
+                    	showAlert("Error", "Please choose an account.");
+                    } else {
+                    	//pstmt.setString(5, an);
+                        while (results.next()) {
+                        	String tt = results.getString(1);
+                        	java.sql.Date td = results.getDate(2);
+                        	String de = results.getString(3);
+                        	double m = results.getDouble(4);
+                        	
+                        	Label ttLabel = new Label(tt);
+                        	Label tdLabel = new Label("" + td);
+                        	Label deLabel = new Label(de);
+                        	Label mLabel = new Label(String.format("$%.2f", m));
+                        	Button viewButton = new Button("View");
+                        	viewButton.setOnAction(b -> showTransReportPage(an, ttLabel, tdLabel, deLabel, mLabel));
+                        	
+                        	grid.add(ttLabel, 0, i);
+                        	grid.add(tdLabel, 1, i);
+                        	grid.add(deLabel, 2, i);
+                        	grid.add(mLabel, 3, i);
+                        	grid.add(viewButton, 4, i++);
+                        }
+                    }
+                    selectBox.valueProperty().set(null);
+                    pstmt.close();
+        		}
+        	} catch (SQLException e) {
+        		System.err.print(e.getMessage());
+        	}
+        });
+        //
+        grid.add(selectBox, 0, 0);
+        grid.add(selectButton, 1, 0);
+        //
+        layout.setCenter(grid);
+
+        Scene transactionsScene = new Scene(layout, 800, 600);
+        primaryStage.setScene(transactionsScene);
+    }
+    
+    private void showTransReportByTypePage(Label anLabel, String ttS, Label tdLabel, Label deLabel, Label mLabel){
+    	BorderPane layout = new BorderPane();
+    	layout.setStyle("-fx-background-color: #E6FFE6;"); // Light green background
+
+        // Add the top bar
+        layout.setTop(createTopBar());
+        
+        GridPane grid = new GridPane();
+        grid.setAlignment(Pos.CENTER);
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(25, 25, 25, 25));
+    	//
+        Button backButton = new Button("Back");
+        backButton.setOnAction(e -> showTransReportScene());
+        Label an = new Label("Account Name:");
+        Label tt = new Label("Transaction Type:");
+        Label td = new Label("Transaction Date:");
+        Label de = new Label("Description");
+        Label m = new Label("Money In/Out");
+        Label ttLabel = new Label(ttS);
+        grid.add(an, 0, 0);
+        grid.add(anLabel, 1, 0);
+        grid.add(tt, 0, 1);
+        grid.add(ttLabel, 1, 1);
+        grid.add(td, 0, 2);
+        grid.add(tdLabel, 1, 2);
+        grid.add(de, 0, 3);
+        grid.add(deLabel, 1, 3);
+        grid.add(m, 0, 4);
+        grid.add(mLabel, 1, 4);
+        grid.add(backButton, 1, 5);
+        //
+        layout.setCenter(grid);
+
+        Scene transactionsScene = new Scene(layout, 800, 600);
+        primaryStage.setScene(transactionsScene);
+    }
+    
+    private void showTransReportByTypeScene(){
+    	BorderPane layout = new BorderPane();
+    	layout.setStyle("-fx-background-color: #E6FFE6;"); // Light green background
+
+        // Add the top bar
+        layout.setTop(createTopBar());
+        
+        GridPane grid = new GridPane();
+        grid.setAlignment(Pos.CENTER);
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(25, 25, 25, 25));
+    	//
+        ComboBox<String> transTypeSelection = new ComboBox<String>();
+        //populate list
+        String transTypeQuery = "SELECT tname FROM transactionTypeTable";
+        try (var conn = DriverManager.getConnection(url)) {
+            if (conn != null) {
+            	var pstmt = conn.prepareStatement(transTypeQuery);
+                var results = pstmt.executeQuery();
+                while (results.next()) {
+                	String ttype = results.getString(1);
+                	transTypeSelection.getItems().add(ttype);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println(e.getMessage());
+        }
+        Button selectButton = new Button("Select Transaction Type");
+        selectButton.setOnAction(a -> {
+        	String tt = transTypeSelection.getValue();
+        	String query = "SELECT accName,transactionDate,description,money FROM transactionsTableV2 WHERE transactionType = '";
+        	query += tt + "' ORDER BY transactionDate DESC";
+        	try (var conn = DriverManager.getConnection(url)){
+        		if (conn != null) {
+        			var pstmt = conn.prepareStatement(query);
+                    var results = pstmt.executeQuery();
+                    int i = 1;
+                    
+                    if (tt == null) {
+                    	showAlert("Error", "Please choose a transaction type.");
+                    } else {
+                    	while (results.next()) {
+                    		String an = results.getString(1);
+                    		java.sql.Date td = results.getDate(2);
+                    		String de = results.getString(3);
+                    		double m = results.getDouble(4);
+                    		
+                    		Label anLabel = new Label(an);
+                        	Label tdLabel = new Label("" + td);
+                        	Label deLabel = new Label(de);
+                        	Label mLabel = new Label(String.format("$%.2f", m));
+                        	Button viewButton = new Button("View");
+                        	viewButton.setOnAction(b -> showTransReportByTypePage(anLabel, tt, tdLabel, deLabel, mLabel));
+                        	
+                        	grid.add(anLabel, 0, i);
+                        	grid.add(tdLabel, 1, i);
+                        	grid.add(deLabel, 2, i);
+                        	grid.add(mLabel, 3, i);
+                        	grid.add(viewButton, 4, i++);
+                    	}
+                    }
+                    transTypeSelection.valueProperty().set(null);
+                    pstmt.close();
+        		}
+        	} catch (SQLException e) {
+        		System.err.print(e.getMessage());
+        	}
+        });
+        grid.add(transTypeSelection, 0, 0);
+        grid.add(selectButton, 1, 0);
+        //
+        layout.setCenter(grid);
+
+        Scene transactionsScene = new Scene(layout, 800, 600);
+        primaryStage.setScene(transactionsScene);
+    }
+    
+    private void checkScheduledsToday(){
+    	String query = "SELECT scheduleName FROM schedTransactionTableV2 WHERE dueDate = ";
+    	int day = LocalDate.now().getDayOfMonth();
+    	query += day;
+    	//int ct = 0;
+    	String msg1 = "Transactions due today: ";
+    	String msg2 = "";
+    	try (var conn = DriverManager.getConnection(url)){
+    		if (conn != null) {
+    			var pstmt = conn.prepareStatement(query);
+    			var results = pstmt.executeQuery();
+    			while(results.next()) {
+    				String name = results.getString(1);
+    				msg2 += ", " + name;
+    			}
+    		}
+    	} catch (SQLException e) {
+    		System.err.print(e.getMessage());
+    	}
+    	if (msg2.length() < 3) return;
+    	msg2 = msg2.substring(2);
+    	showAlert(msg1,msg2);
     }
     
     private void showSearchTransactionsScene() {
