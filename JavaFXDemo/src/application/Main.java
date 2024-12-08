@@ -221,7 +221,16 @@ public class Main extends Application {
         		if (conn != null) {
         			var pstmt = conn.prepareStatement(query);
                     var results = pstmt.executeQuery();
-                    int i = 1;
+                    int i = 2;
+                    
+                    Label ttHead = new Label("Transaction Type");
+                    Label tdHead = new Label("Transaction Date");
+                    Label deHead = new Label("Description");
+                    Label mHead = new Label("Money In/Out");
+                    grid.add(ttHead, 0, 1);
+                	grid.add(tdHead, 1, 1);
+                	grid.add(deHead, 2, 1);
+                	grid.add(mHead, 3, 1);
                     
                     if (an == null) {
                     	showAlert("Error", "Please choose an account.");
@@ -340,7 +349,16 @@ public class Main extends Application {
         		if (conn != null) {
         			var pstmt = conn.prepareStatement(query);
                     var results = pstmt.executeQuery();
-                    int i = 1;
+                    int i = 2;
+                    
+                    Label anHead = new Label("Account Name");
+                    Label tdHead = new Label("Transaction Date");
+                    Label deHead = new Label("Description");
+                    Label mHead = new Label("Money In/Out");
+                    grid.add(anHead, 0, 1);
+                	grid.add(tdHead, 1, 1);
+                	grid.add(deHead, 2, 1);
+                	grid.add(mHead, 3, 1);
                     
                     if (tt == null) {
                     	showAlert("Error", "Please choose a transaction type.");
@@ -430,7 +448,17 @@ public class Main extends Application {
                 	if (conn != null) {
                 		var pstmt = conn.prepareStatement(query);
                         var results = pstmt.executeQuery();
-                        int i = 1;
+                        int i = 2;
+                        Label accNameHead = new Label("Account Name");
+                        Label ttypeHead = new Label("Transaction Type");
+                        Label tdateHead = new Label("Transaction Date");
+                        Label descHead = new Label("Description");
+                        Label moneyHead = new Label("Money In/Out");
+                        grid.add(accNameHead, 0, 1);
+                    	grid.add(ttypeHead, 1, 1);
+                    	grid.add(tdateHead, 2, 1);
+                    	grid.add(descHead, 3, 1);
+                    	grid.add(moneyHead, 4, 1);
                         while (results.next()) {
                         	String an = results.getString(1);
                         	String tt = results.getString(2);
@@ -612,6 +640,7 @@ public class Main extends Application {
         TextField searchBox = new TextField();
         Button searchButton = new Button("Search");
         
+        
         searchButton.setOnAction(e -> {
         	String srch = searchBox.getText();
         	if (!srch.equals("")) {
@@ -621,7 +650,19 @@ public class Main extends Application {
                 	if (conn != null) {
                 		var pstmt = conn.prepareStatement(query);
                         var results = pstmt.executeQuery();
-                        int i = 1;
+                        int i = 2;
+                        Label schedNameHead = new Label("Schedule Name");
+                        Label accNameHead = new Label("Account Name");
+                        Label ttypeHead = new Label("Transaction Type");
+                        Label freqHead = new Label("Frequency");
+                        Label dueDateHead = new Label("Due Date");
+                        Label payAmtHead = new Label("Payment Amount");
+                        grid.add(schedNameHead, 0, 1);
+                        grid.add(accNameHead, 1, 1);
+                        grid.add(ttypeHead, 2, 1);
+                        grid.add(freqHead, 3, 1);
+                        grid.add(dueDateHead, 4, 1);
+                        grid.add(payAmtHead, 5, 1);
                         while (results.next()) {
                         	String sn = results.getString(1);
                         	String an = results.getString(2);
@@ -787,13 +828,23 @@ public class Main extends Application {
         
         Label myTransHead = new Label("MY TRANSACTIONS");
         grid.add(myTransHead, 2, 0);
+        Label accNameHead = new Label("Account Name");
+        Label ttypeHead = new Label("Transaction Type");
+        Label tdateHead = new Label("Transaction Date");
+        Label descHead = new Label("Description");
+        Label moneyHead = new Label("Money In/Out");
+        grid.add(accNameHead, 0, 1);
+    	grid.add(ttypeHead, 1, 1);
+    	grid.add(tdateHead, 2, 1);
+    	grid.add(descHead, 3, 1);
+    	grid.add(moneyHead, 4, 1);
         
         String tableQuery = "SELECT accName,transactionType,transactionDate,description,money FROM transactionsTableV2 ORDER BY transactionDate DESC";
         try (var conn = DriverManager.getConnection(url)){
         	if (conn != null) {
         		var pstmt = conn.prepareStatement(tableQuery);
                 var results = pstmt.executeQuery();
-                int i = 1;
+                int i = 2;
                 while (results.next()) {
                 	String an = results.getString(1);
                 	String tt = results.getString(2);
@@ -954,13 +1005,25 @@ public class Main extends Application {
         
         Label title = new Label("SCHEDULED TRANSACTIONS");
         grid.add(title, 3, 0);
+        Label schedNameHead = new Label("Schedule Name");
+        Label accNameHead = new Label("Account Name");
+        Label ttypeHead = new Label("Transaction Type");
+        Label freqHead = new Label("Frequency");
+        Label dueDateHead = new Label("Due Date");
+        Label payAmtHead = new Label("Payment Amount");
+        grid.add(schedNameHead, 0, 1);
+        grid.add(accNameHead, 1, 1);
+        grid.add(ttypeHead, 2, 1);
+        grid.add(freqHead, 4, 1);
+        grid.add(dueDateHead, 5, 1);
+        grid.add(payAmtHead, 6, 1);
         
         String tableQuery = "SELECT scheduleName,accountName,transactionType,frequency,dueDate,payAmount FROM schedTransactionTableV2 ORDER BY dueDate ASC;";
         try (var conn = DriverManager.getConnection(url)){
         	if (conn != null) {
         		var pstmt = conn.prepareStatement(tableQuery);
                 var results = pstmt.executeQuery();
-                int i = 1;
+                int i = 2;
                 while (results.next()) {
                 	String sn = results.getString(1);
                 	String an = results.getString(2);
@@ -1246,6 +1309,12 @@ public class Main extends Application {
         
         Label myAccountsHead = new Label("ACCOUNTS");
         grid.add(myAccountsHead, 2, 0);
+        Label accNameHead = new Label("Account Name");
+        Label opDateHead = new Label("Opening Date");
+        Label balanceHead = new Label("Balance");
+        grid.add(accNameHead, 0, 1);
+        grid.add(opDateHead, 2, 1);
+        grid.add(balanceHead, 4, 1);
         
         String tableQuery = "SELECT accountName,openingDate,balance FROM accountsV2 ORDER BY openingDate DESC;";
     	try (var conn = DriverManager.getConnection(url)) {
@@ -1256,7 +1325,7 @@ public class Main extends Application {
                 
                 var pstmt = conn.prepareStatement(tableQuery);
                 var results = pstmt.executeQuery();
-                int i = 1;
+                int i = 2;
                 while (results.next()) {
                 	String an = results.getString(1);
                 	java.sql.Date od = results.getDate(2);
